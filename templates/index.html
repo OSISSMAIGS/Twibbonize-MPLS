@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Luminance Twibbon Generator</title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='images/transparent_logo.png') }}"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  </head>
+  <body>
+    <div id="snow_fall"></div>
+    <div id="loader" class="loader-hidden">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="container hidden">
+      <header>
+        <div class="header-branding">
+          <img
+            src="{{ url_for('static', filename='images/transparent_logo.png') }}"
+            alt="Luminance Logo"
+            class="header-logo"
+          />
+          <h1>Luminance</h1>
+        </div>
+        <p class="mobile-only">Create your custom profile picture frame!</p>
+      </header>
+
+      <main>
+        <div class="editor-container">
+          <canvas
+            id="canvas"
+            width="500"
+            height="500"
+            data-frame-url="{{ url_for('static', filename='images/twibbonize.jpeg') }}"
+          ></canvas>
+        </div>
+
+        <div class="controls">
+          <p>Choose your photo to begin.</p>
+          <input
+            type="file"
+            id="imageLoader"
+            name="imageLoader"
+            accept="image/*"
+          />
+
+          <div id="zoom-controls" style="display: none">
+            <label for="zoom">Zoom:</label>
+            <input
+              type="range"
+              id="zoom"
+              name="zoom"
+              min="0.1"
+              max="3"
+              value="1"
+              step="0.05"
+            />
+          </div>
+
+          <div class="action-buttons" style="display: none">
+            <button id="rotateBtn">Rotate</button>
+            <button id="resetBtn">Reset</button>
+            <button id="downloadBtn">Download Image</button>
+          </div>
+        </div>
+      </main>
+
+      <section id="caption-section" class="hidden" style="display: none">
+        <h2>Your Caption is Ready!</h2>
+        <div id="caption-template">
+          <p>
+            [Sample Caption]
+            <br /><br />
+            Excited to be part of Luminance! Ready for an unforgettable
+            experience and amazing moments.
+            <br /><br />
+            #Luminance2024 #ShineOn #EventHighlights
+          </p>
+        </div>
+        <button id="copyCaptionBtn">Copy Caption</button>
+      </section>
+
+      <footer class="hidden">
+        <p>Copyright © 2025 Sekbid Multimedia Website Valiance</p>
+      </footer>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+      // Intersection Observer for reveal animations
+      document.addEventListener("DOMContentLoaded", () => {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("show");
+            }
+          });
+        });
+        const hiddenElements = document.querySelectorAll(".hidden");
+        hiddenElements.forEach((el) => observer.observe(el));
+      });
+
+      // Particles.js configuration
+      particlesJS("snow_fall", {
+        particles: {
+          number: { value: 200, density: { enable: true, value_area: 800 } },
+          color: { value: "#ffffff" },
+          shape: {
+            type: "circle",
+            stroke: { width: 0, color: "#000000" },
+            polygon: { nb_sides: 5 },
+          },
+          opacity: {
+            value: 0.8,
+            random: true,
+            anim: { enable: true, speed: 1, opacity_min: 0.1, sync: false },
+          },
+          size: {
+            value: 3,
+            random: true,
+            anim: { enable: false, speed: 40, size_min: 0.1, sync: false },
+          },
+          line_linked: { enable: false },
+          move: {
+            enable: true,
+            speed: 4,
+            direction: "bottom",
+            random: false,
+            straight: false,
+            out_mode: "out",
+            attract: { enable: false, rotateX: 600, rotateY: 1200 },
+          },
+        },
+        interactivity: {
+          detect_on: "canvas",
+          events: {
+            onhover: { enable: false, mode: "repulse" },
+            onclick: { enable: false, mode: "push" },
+            resize: true,
+          },
+          modes: { push: { particles_nb: 4 } },
+        },
+        retina_detect: true,
+      });
+    </script>
+  </body>
+</html>
