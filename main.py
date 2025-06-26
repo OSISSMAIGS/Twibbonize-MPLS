@@ -9,7 +9,7 @@ def index():
 @app.errorhandler(404)
 def error404(error):
     return redirect('/')
-    
+
 
 if __name__ == '__main__':
     app.run(debug=True) 

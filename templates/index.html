@@ -9,18 +9,16 @@
       type="image/png"
       href="{{ url_for('static', filename='images/transparent_logo.png') }}"
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
-    />
+
+    <!-- 1. Preconnect -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- 2. Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <!-- 3. Style Anda -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='/images/valiancelogo.png') }}" type="image/x-icon">
   </head>
   <body>
     <div id="snow_fall"></div>
@@ -32,7 +30,7 @@
       <header>
         <div class="header-branding">
           <img
-            src="{{ url_for('static', filename='images/transparent_logo.png') }}"
+            src="{{ url_for('static', filename='images/valiancelogo.png') }}"
             alt="Luminance Logo"
             class="header-logo"
           />
@@ -97,7 +95,7 @@
       </section>
 
       <footer class="hidden">
-        <p>Copyright © 2025 Sekbid Multimedia Website Valiance</p>
+        <a href="https://osissmaigs.com/" target="_blank">Copyright © 2025 Sekbid Multimedia Website Valiance</a>
       </footer>
     </div>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
