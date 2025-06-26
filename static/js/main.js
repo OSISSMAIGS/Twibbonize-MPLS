@@ -1,3 +1,4 @@
+// main.js: handle image, canvas, caption copy, dll.
 document.addEventListener('DOMContentLoaded', () => {
     const loader = document.getElementById('loader');
     const canvas = document.getElementById('canvas');
@@ -15,11 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let userImage = new Image();
     let frameImage = new Image();
-    frameImage.crossOrigin = 'Anonymous'; // Handle potential CORS issues with canvas
+    frameImage.crossOrigin = 'Anonymous';
     let isFrameProcessed = false;
 
     let scale = 1;
-    let rotation = 0; // In degrees
+    let rotation = 0;
     let offsetX = 0;
     let offsetY = 0;
     let isDragging = false;
@@ -31,105 +32,36 @@ document.addEventListener('DOMContentLoaded', () => {
         rotation = 0;
         zoomSlider.value = 1;
         if (userImage.src) {
-            // Recenter the image
             offsetX = (canvas.width - userImage.width) / 2;
             offsetY = (canvas.height - userImage.height) / 2;
             drawCanvas();
         }
     }
 
-    function changeFrame(frameUrl) {
-        if (!frameUrl) {
-            console.warn('No initial frame found. Drawing placeholder.');
-            drawPlaceholderFrame();
-            return;
-        }
-        showLoader();
-        isFrameProcessed = false; // Reset for new frames (especially JPEGs)
-        frameImage.src = frameUrl;
-    }
-
-    frameImage.onload = () => {
-        // If the frame is a JPEG, we need to manually make the white areas transparent.
-        const isJpeg = canvas.dataset.frameUrl.toLowerCase().includes('.jpeg') || canvas.dataset.frameUrl.toLowerCase().includes('.jpg');
-        
-        if (isJpeg && !isFrameProcessed) {
-            const frameCanvas = document.createElement('canvas');
-            frameCanvas.width = canvas.width;
-            frameCanvas.height = canvas.height;
-            const frameCtx = frameCanvas.getContext('2d', { willReadFrequently: true });
-            frameCtx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
-
-            try {
-                const imageData = frameCtx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-                // A tolerance is needed because JPEG compression isn't perfect.
-                const tolerance = 20; 
-
-                for (let i = 0; i < data.length; i += 4) {
-                    const r = data[i];
-                    const g = data[i + 1];
-                    const b = data[i + 2];
-                    if (r > 255 - tolerance && g > 255 - tolerance && b > 255 - tolerance) {
-                        data[i + 3] = 0; // Set alpha to 0 (transparent)
-                    }
-                }
-                frameCtx.putImageData(imageData, 0, 0);
-
-                isFrameProcessed = true; // Flag to prevent an infinite loop
-                frameImage.src = frameCanvas.toDataURL(); // This re-triggers onload
-                return; // Exit and wait for the new Data URL to load
-            } catch (error) {
-                console.error("Could not process JPEG frame due to browser security restrictions. Displaying as-is.", error);
-            }
-        }
-        
-        drawCanvas(); // Draw initial state (frame or placeholder text)
-        hideLoader(); // Hide loader once frame is ready and drawn
-    };
-
-    frameImage.onerror = () => {
-        console.warn('Frame not found. Drawing a placeholder frame.');
-        drawPlaceholderFrame();
-        hideLoader(); // Also hide loader on error
-    };
-
     function drawPlaceholderFrame() {
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = canvas.width;
         tempCanvas.height = canvas.height;
         const tempCtx = tempCanvas.getContext('2d');
-        
         tempCtx.strokeStyle = 'var(--secondary-color, #3b82f6)';
         tempCtx.lineWidth = 25;
         tempCtx.strokeRect(0, 0, tempCanvas.width, tempCanvas.height);
-        
-        // Text removed from placeholder frame for a cleaner look
-
-        // Replace the frameImage with the placeholder
         frameImage.src = tempCanvas.toDataURL();
     }
 
     function drawCanvas() {
-        // Always start fresh
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw the transformed user image first (background)
         if (userImage.src) {
             ctx.save();
             ctx.translate(offsetX, offsetY);
             ctx.scale(scale, scale);
-            // Translate to the center of the image to rotate around it
-            ctx.translate(userImage.width / 2, userImage.height / 2);
-            ctx.rotate(rotation * Math.PI / 180);
-            // Translate back before drawing
-            ctx.translate(-userImage.width / 2, -userImage.height / 2);
+            ctx.translate(userImage.width/2, userImage.height/2);
+            ctx.rotate(rotation * Math.PI/180);
+            ctx.translate(-userImage.width/2, -userImage.height/2);
             ctx.drawImage(userImage, 0, 0);
             ctx.restore();
         }
-
-        // Draw the frame on top
-        if (frameImage.complete && frameImage.naturalHeight !== 0) {
+        if (frameImage.complete && frameImage.naturalHeight!==0) {
             ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
         }
     }
@@ -138,167 +70,79 @@ document.addEventListener('DOMContentLoaded', () => {
         loader.classList.remove('loader-hidden');
         loader.classList.add('loader-visible');
     }
-
     function hideLoader() {
         loader.classList.remove('loader-visible');
         loader.classList.add('loader-hidden');
     }
 
-    imageLoader.addEventListener('change', (e) => {
+    imageLoader.addEventListener('change', e => {
         const file = e.target.files[0];
         if (file) {
             showLoader();
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                userImage.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
+            const r = new FileReader();
+            r.onload = ev => userImage.src=ev.target.result;
+            r.readAsDataURL(file);
         }
     });
 
-    userImage.onload = () => {
-        // Reset transformations for new image
-        resetImageState();
-        
-        // Show controls
-        zoomControls.style.display = 'block';
-        actionButtons.style.display = 'grid';
-        
-        hideLoader();
+    userImage.onload = () => { resetImageState(); zoomControls.style.display='block'; actionButtons.style.display='grid'; hideLoader(); };
+
+    zoomSlider.addEventListener('input', e => {
+        const old=scale; scale=parseFloat(e.target.value);
+        const cx=canvas.width/2, cy=canvas.height/2;
+        offsetX = cx - (cx-offsetX)*(scale/old);
+        offsetY = cy - (cy-offsetY)*(scale/old);
+        drawCanvas();
+    });
+
+    ['mousedown','mouseup','mouseleave','mousemove'].forEach(evt => canvas.addEventListener(evt, e=>{
+        if(evt==='mousedown' && userImage.src){isDragging=true; lastX=e.clientX; lastY=e.clientY; canvas.style.cursor='grabbing';}
+        if(evt==='mouseup'||evt==='mouseleave'){isDragging=false; canvas.style.cursor='grab';}
+        if(evt==='mousemove' && isDragging){ const dx=e.clientX-lastX, dy=e.clientY-lastY; offsetX+=dx; offsetY+=dy; lastX=e.clientX; lastY=e.clientY; drawCanvas(); }
+    }));
+
+    ['touchstart','touchend','touchmove'].forEach((evt,i)=> canvas.addEventListener(evt,e=>{
+        if(evt==='touchstart'&& userImage.src&&e.touches.length===1){e.preventDefault(); isDragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY;}
+        if(evt==='touchend'){isDragging=false;}
+        if(evt==='touchmove'&& isDragging&&e.touches.length===1){e.preventDefault(); const dx=e.touches[0].clientX-lastX, dy=e.touches[0].clientY-lastY; offsetX+=dx; offsetY+=dy; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; drawCanvas();}
+    },{passive:false}));
+
+    downloadBtn.addEventListener('click',()=>{
+        if(!userImage.src){ alert('Please upload an image first!'); return; }
+        drawCanvas(); confetti({particleCount:150,spread:90,origin:{y:0.6},colors:['#e2e8f0','#93c5fd','#3b82f6','#1e3a8a']});
+        const a=document.createElement('a'); a.download='twibbon_luminance.png'; a.href=canvas.toDataURL('image/png'); a.click();
+        captionSection.style.display='block'; captionSection.scrollIntoView({behavior:'smooth'});
+    });
+
+    rotateBtn.addEventListener('click',()=>{ if(userImage.src){ rotation=(rotation+90)%360; drawCanvas(); }});
+    resetBtn.addEventListener('click',()=>{ if(userImage.src) resetImageState(); });
+
+    copyCaptionBtn.addEventListener('click',()=>{
+        let html=captionTemplate.innerHTML;
+        html=html.replace(/<br\s*\/?>\s*<br\s*\/?>/gi,'\n\n');
+        html=html.replace(/<br\s*\/?>/gi,' ');
+        html=html.replace(/<\/?[^>]+>/g,'');
+        html=html.replace(/&nbsp;/g,' ');
+        const paras=html.split(/\n{2,}/).map(p=>p.trim()).filter(p=>p);
+        const text=paras.join('\n\n');
+        navigator.clipboard.writeText(text).then(()=>{
+            const o=copyCaptionBtn.innerText; copyCaptionBtn.innerText='Copied!'; setTimeout(()=>copyCaptionBtn.innerText=o,2000);
+        }).catch(err=>{ console.error('Could not copy:',err); alert('Gagal menyalin caption.'); });
+    });
+
+    frameImage.onload = () => {
+        const isJpeg = canvas.dataset.frameUrl.toLowerCase().includes('.jpeg') || canvas.dataset.frameUrl.toLowerCase().includes('.jpg');
+        if(isJpeg && !isFrameProcessed){
+            const fc=document.createElement('canvas'); fc.width=canvas.width; fc.height=canvas.height;
+            const fctx=fc.getContext('2d',{willReadFrequently:true}); fctx.drawImage(frameImage,0,0,canvas.width,canvas.height);
+            try{
+                const imgd=fctx.getImageData(0,0,canvas.width,canvas.height), d=imgd.data;
+                for(let i=0;i<d.length;i+=4){ if(d[i]>235&&d[i+1]>235&&d[i+2]>235) d[i+3]=0; }
+                fctx.putImageData(imgd,0,0); isFrameProcessed=true; frameImage.src=fc.toDataURL(); return;
+            }catch(e){ console.error('JPEG proc blocked, fallback',e); }
+        }
+        drawCanvas(); hideLoader();
     };
-
-    // Zoom functionality
-    zoomSlider.addEventListener('input', (e) => {
-        const oldScale = scale;
-        scale = parseFloat(e.target.value);
-
-        // Adjust offset to zoom towards the center of the canvas
-        const canvasCenterX = canvas.width / 2;
-        const canvasCenterY = canvas.height / 2;
-
-        offsetX = canvasCenterX - (canvasCenterX - offsetX) * (scale / oldScale);
-        offsetY = canvasCenterY - (canvasCenterY - offsetY) * (scale / oldScale);
-
-        drawCanvas();
-    });
-
-    // Panning functionality
-    canvas.addEventListener('mousedown', (e) => {
-        if (userImage.src) {
-            isDragging = true;
-            lastX = e.clientX;
-            lastY = e.clientY;
-            canvas.style.cursor = 'grabbing';
-        }
-    });
-
-    canvas.addEventListener('mouseup', () => {
-        isDragging = false;
-        canvas.style.cursor = 'grab';
-    });
-
-    canvas.addEventListener('mouseleave', () => {
-        isDragging = false;
-        canvas.style.cursor = 'grab';
-    });
-
-    canvas.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-            const dx = e.clientX - lastX;
-            const dy = e.clientY - lastY;
-            offsetX += dx;
-            offsetY += dy;
-            lastX = e.clientX;
-            lastY = e.clientY;
-            drawCanvas();
-        }
-    });
-
-    // Touch events for mobile panning
-    canvas.addEventListener('touchstart', (e) => {
-        if (userImage.src && e.touches.length === 1) {
-            e.preventDefault(); // Prevent page from scrolling
-            isDragging = true;
-            lastX = e.touches[0].clientX;
-            lastY = e.touches[0].clientY;
-        }
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', () => {
-        isDragging = false;
-    });
-
-    canvas.addEventListener('touchmove', (e) => {
-        if (isDragging && e.touches.length === 1) {
-            e.preventDefault(); // Prevent page from scrolling
-            const dx = e.touches[0].clientX - lastX;
-            const dy = e.touches[0].clientY - lastY;
-            offsetX += dx;
-            offsetY += dy;
-            lastX = e.touches[0].clientX;
-            lastY = e.touches[0].clientY;
-            drawCanvas();
-        }
-    }, { passive: false });
-    
-    // Download functionality
-    downloadBtn.addEventListener('click', () => {
-        if (!userImage.src) {
-            alert("Please upload an image first!");
-            return;
-        }
-        // Redraw canvas one last time to ensure everything is perfect
-        drawCanvas();
-
-        // Trigger confetti
-        confetti({
-            particleCount: 150,
-            spread: 90,
-            origin: { y: 0.6 },
-            colors: ['#e2e8f0', '#93c5fd', '#3b82f6', '#1e3a8a']
-        });
-        
-        // Trigger download
-        const link = document.createElement('a');
-        link.download = 'twibbon_luminance.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-
-        // Show caption section
-        captionSection.style.display = 'block';
-        captionSection.scrollIntoView({ behavior: 'smooth' });
-    });
-
-    rotateBtn.addEventListener('click', () => {
-        if (userImage.src) {
-            rotation = (rotation + 90) % 360;
-            drawCanvas();
-        }
-    });
-
-    resetBtn.addEventListener('click', () => {
-        if (userImage.src) {
-            resetImageState();
-        }
-    });
-
-    // Copy caption functionality
-    copyCaptionBtn.addEventListener('click', () => {
-        // Use the new Clipboard API for modern browsers
-        navigator.clipboard.writeText(captionTemplate.innerText).then(() => {
-            // Give user feedback
-            const originalText = copyCaptionBtn.innerText;
-            copyCaptionBtn.innerText = 'Copied!';
-            setTimeout(() => {
-                copyCaptionBtn.innerText = originalText;
-            }, 2000);
-        }).catch(err => {
-            console.error('Could not copy text: ', err);
-            alert('Failed to copy caption. Please copy it manually.');
-        });
-    });
-
-    // Initial state
-    // Kick off the loading process for the default frame.
+    frameImage.onerror = () => { drawPlaceholderFrame(); hideLoader(); };
     frameImage.src = canvas.dataset.frameUrl;
-}); 
+});
